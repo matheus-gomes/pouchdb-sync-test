@@ -3,6 +3,9 @@
 
 <body>
   <button onclick="addData()">Incluir</button>
+  <div>
+    <ul id="list"></ul>
+  </div>
   <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
   <script>
     // iniciar banco
@@ -14,15 +17,14 @@
     var remoteCouch = 'http://admin:admin@localhost:9000/teste';
     // var remoteCouch2 = 'http://192.168.15.13:9000/todos';
 
-    // db.info(function (err, info) {
-    //   db.changes({
-    //     since: 'now',
-    //     live: true
-    //   })
-    // })
+    db.info(function(err, info) {
+    db.changes({
+      since: 'now',
+      live: true
+    }).on('change', showData);
+  })
 
     function addData() {
-      debugger
       var data = {
         _id: new Date().toISOString(),
         descricao: new Date().toISOString(),
@@ -32,7 +34,24 @@
       }).catch(function (err) {
         console.log(err);
       });
-      alert('OK');
+    }
+
+    function showData() {
+      db.allDocs({ include_docs: true, descending: true }).then(function (doc) {
+        redrawList(doc.rows);
+      }).catch(function (err) {
+        console.log(err);
+      });
+    }
+
+    function redrawList(todos) {
+      var ul = document.getElementById('list');
+      ul.innerHTML = '';
+      todos.forEach(function (todo) {
+        var li = document.createElement('li')
+        li.innerHTML = todo.doc.descricao;
+        ul.appendChild(li);
+      });
     }
 
     function sync() {
@@ -40,6 +59,8 @@
       db.sync(remoteCouch, opts);
       // db.sync(remoteCouch, remoteCouch2);
     }
+    
+    showData();
 
     if (remoteCouch) {
       sync();
